@@ -5,10 +5,11 @@ from tcod.console import Console
 from tcod.map import compute_fov
 
 if TYPE_CHECKING:
-    from entity import Entity
+    from entity import Actor
     from game_map import GameMap
+    from input_handlers import EventHandler
 
-from input_handlers import EventHandler
+from input_handlers import MainGameEventHandler
 
 
 class Engine:
@@ -18,21 +19,29 @@ class Engine:
 
     def __init__(
         self,
-        player: Entity,
+        player: Actor,
     ) -> None:
-        self.event_handler = EventHandler(self)
+        self.event_handler = MainGameEventHandler(self)
         self.player = player
 
     def handle_enemy_turns(self) -> None:
-        for entity in self.game_map.entities - {self.player}:
-            print(f"The {entity.name} wonders when it will get to take a real turn")
+        for entity in set(self.game_map.actors) - {self.player}:
+            if entity.ai:
+                entity.ai.perform()
 
     def handle_events(self, events: Iterable[Any]) -> None:
         """
         Uses the given action_handler to handle actions
         """
-        for entity in self.game_map.entities - {self.player}:
-            print(f"The {entity.name} wonders when it will get to take a real turn")
+        for event in events:
+            action = self.event_handler.dispatch(event)
+
+            if action is None:
+                continue
+
+            action.perform(self, self.player)
+            self.handle_enemy_turns()
+            self.update_fov()  # * Update the fov before the players next action
 
     def update_fov(self) -> None:
         """Recompute the visible area based on the players point of view"""
@@ -50,6 +59,10 @@ class Engine:
         The map itself will render its entities
         """
         self.game_map.render(console)
+
+        console.print(
+            x=1, y=47, string=f"{self.player.fighter.hp}/{self.player.fighter.max_hp}"
+        )
 
         context.present(console)
         console.clear()
