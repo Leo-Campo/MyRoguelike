@@ -1,6 +1,7 @@
 # Main Game file
 import copy
 import tcod
+import color
 import entity_factories
 from procgen import generate_dungeon
 from engine import Engine
@@ -8,11 +9,11 @@ from engine import Engine
 
 def main() -> None:
     # * Display measurements in tiles
-    screen_width = 80
-    screen_height = 50
+    screen_width = 100
+    screen_height = 80
 
     map_width = 80
-    map_height = 45
+    map_height = 60
     room_max_size = 10
     room_min_size = 6
     max_rooms = 30
@@ -38,6 +39,9 @@ def main() -> None:
     )
 
     engine.update_fov()
+    engine.message_log.add_message(
+        "Hello and welcome, adventurer, to yet another dungeon!", color.welcome_text
+    )
 
     # * New Terminal
     with tcod.context.new_terminal(
@@ -47,8 +51,11 @@ def main() -> None:
 
         # * Game loop
         while True:
-            engine.render(console=root_console, context=context)
-            engine.event_handler.handle_events()
+            root_console.clear()
+            engine.event_handler.on_render(console=root_console)
+            context.present(root_console)
+
+            engine.event_handler.handle_events(context)
 
             events = tcod.event.wait()
             engine.handle_events(events)
