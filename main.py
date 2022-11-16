@@ -1,11 +1,9 @@
 # Main Game file
 import copy
 import tcod
-from input_handlers import EventHandler
 import entity_factories
-from engine import Engine
-from game_map import GameMap
 from procgen import generate_dungeon
+from engine import Engine
 
 
 def main() -> None:
@@ -25,23 +23,21 @@ def main() -> None:
         "./resources/icons.png", 32, 8, tcod.tileset.CHARMAP_TCOD
     )
 
-    # * Create a EventHandler and let it manage all events
-    event_handler = EventHandler()
-
     # * Create player entity
     player = copy.deepcopy(entity_factories.player)
 
-    game_map = generate_dungeon(
+    engine = Engine(player=player)
+    engine.game_map = generate_dungeon(
         max_rooms=max_rooms,
         room_min_size=room_min_size,
         room_max_size=room_max_size,
+        max_monsters_per_room=max_monsters_per_room,
         map_width=map_width,
         map_height=map_height,
-        max_monsters_per_room=max_monsters_per_room,
-        player=player,
+        engine=engine,
     )
 
-    engine = Engine(event_handler=event_handler, game_map=game_map, player=player)
+    engine.update_fov()
 
     # * New Terminal
     with tcod.context.new_terminal(
@@ -52,6 +48,7 @@ def main() -> None:
         # * Game loop
         while True:
             engine.render(console=root_console, context=context)
+            engine.event_handler.handle_events()
 
             events = tcod.event.wait()
             engine.handle_events(events)

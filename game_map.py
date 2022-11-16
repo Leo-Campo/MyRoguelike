@@ -6,6 +6,7 @@ import tile_types
 
 if TYPE_CHECKING:
     from entity import Entity
+    from engine import Engine
 
 
 class GameMap:
@@ -14,15 +15,20 @@ class GameMap:
     """
 
     def __init__(
-        self, width: int, height: int, entities: Iterable[Entity] = ()
+        self, engine: Engine, width: int, height: int, entities: Iterable[Entity] = ()
     ) -> None:
+        self.engine = engine
         self.width = width
         self.height = height
         self.entities = set(entities)
         self.tiles = np.full((width, height), fill_value=tile_types.wall, order="F")
 
-        self.visible = np.full((width, height), fill_value=False, order="F")
-        self.explored = np.full((width, height), fill_value=False, order="F")
+        self.visible = np.full(
+            (width, height), fill_value=False, order="F"
+        )  # * Tiles the player can currently see
+        self.explored = np.full(
+            (width, height), fill_value=False, order="F"
+        )  # * Tiles the player has seen before
 
     def get_blocking_entity_at_location(
         self, location_x: int, location_y: int
