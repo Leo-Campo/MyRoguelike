@@ -1,7 +1,11 @@
+from __future__ import annotations
 import numpy as np
 from tcod.console import Console
-
+from typing import Iterable, Optional, TYPE_CHECKING
 import tile_types
+
+if TYPE_CHECKING:
+    from entity import Entity
 
 
 class GameMap:
@@ -9,13 +13,28 @@ class GameMap:
     Class used to create the game map using tiles
     """
 
-    def __init__(self, width: int, height: int) -> None:
+    def __init__(
+        self, width: int, height: int, entities: Iterable[Entity] = ()
+    ) -> None:
         self.width = width
         self.height = height
+        self.entities = set(entities)
         self.tiles = np.full((width, height), fill_value=tile_types.wall, order="F")
 
         self.visible = np.full((width, height), fill_value=False, order="F")
         self.explored = np.full((width, height), fill_value=False, order="F")
+
+    def get_blocking_entity_at_location(
+        self, location_x: int, location_y: int
+    ) -> Optional[Entity]:
+        for entity in self.entities:
+            if (
+                entity.blocks_movement
+                and entity.x == location_x
+                and entity.y == location_y
+            ):
+                return entity
+        return None
 
     def in_bounds(self, x: int, y: int) -> bool:
         """
@@ -35,3 +54,9 @@ class GameMap:
             choicelist=[self.tiles["light"], self.tiles["dark"]],
             default=tile_types.SHROUD,
         )
+        for entity in self.entities:
+            # * Only print entities that are in the FOV
+            if self.visible[entity.x, entity.y]:
+                console.print(
+                    x=entity.x, y=entity.y, string=entity.char, fg=entity.color
+                )

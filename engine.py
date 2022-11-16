@@ -16,16 +16,18 @@ class Engine:
 
     def __init__(
         self,
-        entities: Set[Entity],
         event_handler: EventHandler,
         game_map: GameMap,
         player: Entity,
     ) -> None:
-        self.entities = entities
         self.event_handler = event_handler
         self.game_map = game_map
         self.player = player
         self.update_fov()
+
+    def handle_enemy_turns(self) -> None:
+        for entity in self.game_map.entities - {self.player}:
+            print(f"The {entity.name} wonders when it will get to take a real turn")
 
     def handle_events(self, events: Iterable[Any]) -> None:
         """
@@ -38,6 +40,7 @@ class Engine:
                 continue
 
             action.perform(self, self.player)
+            self.handle_enemy_turns()
             self.update_fov()  # * Update the fov before the players next action
 
     def update_fov(self) -> None:
@@ -52,13 +55,10 @@ class Engine:
 
     def render(self, console: Console, context: Context) -> None:
         """
-        Renders the given set of entities on the console screen
+        Renders the map
+        The map itself will render its entities
         """
         self.game_map.render(console)
-        for entity in self.entities:
-            # * Only print entities that are in the FOV
-            if self.game_map.visible[entity.x, entity.y]:
-                console.print(entity.x, entity.y, entity.char, fg=entity.color)
 
         context.present(console)
         console.clear()
